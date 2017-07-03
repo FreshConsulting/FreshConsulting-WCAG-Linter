@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<ruleset name="Fresh Consulting WCAG 2.0 Linter">
+    <description>A custom coding standard to check for obvious WCAG 2.0 violations.</description>
+
+    <rule ref="FreshConsulting.WCAG20.Violations"/>
+</ruleset>
+
