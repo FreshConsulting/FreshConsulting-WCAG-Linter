@@ -3,6 +3,11 @@
 class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_Sniff
 {
 
+    // <label> attributes may be in separate text blocks from the form elements they describe
+    // so save all previously seen <label> for ids
+    private $label_for_ids = array();
+
+
     /**
      * Returns the token types that this sniff is interested in.
      *
@@ -28,11 +33,11 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
     }
 
 
-    private function is_missing_form_label($domelement, $label_for_ids) {
+    private function is_missing_form_label($domelement) {
         if ($domelement->hasAttribute('type') && in_array($domelement->getAttribute('type'), array('image', 'submit', 'reset', 'button', 'hidden'))) {
             return false;
         }
-        if ($domelement->hasAttribute('id') && in_array($domelement->getAttribute('id'), $label_for_ids)) {
+        if ($domelement->hasAttribute('id') && in_array($domelement->getAttribute('id'), $this->label_for_ids)) {
             return false;
         }
         if ($domelement->hasAttribute('title') || $domelement->hasAttribute('aria-label')) {
@@ -91,26 +96,27 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
         // else: next token is not text so let's process this and all immediately previous text tokens
 
         // grab previous tokens to create largest possible HTML block
-        $combined_content = '';
+        $content = '';
         $text_stackPtr = $stackPtr;
         while ($text_stackPtr >= 0 && in_array($tokens[$text_stackPtr]['type'], $this->register_strings())) {
             // TODO: strip quotes from T_CONSTANT_ENCAPSED_STRING strings (which may be split across multiple lines)
-            $combined_content = $tokens[$text_stackPtr]['content'] . $combined_content;
+            $content = $tokens[$text_stackPtr]['content'] . $content;
             $text_stackPtr--;
         }
 
-        $content = trim($combined_content);
-        if ('' === $content) {
+        if ('' === trim($content)) {
             // nothing to see here
             return;
         }
+
+        $num_content_lines = substr_count($content, "\n") + 1;
 
         // the HTML parser will complete non-closed elements
         // if the element is not properly closed we cannot judge its validity
         // this hack will cause non-closed <img> elements to always appear valid
         // and non-closed <a> elements to have nodeValue text
         // this additional text will be ignored by properly closed elements
-        $content = $content . ' \'" alt="foo" >';
+        $content = $content . ' \'" aria-label="foo" alt="bar" >';
 
         // try to parse the text as HTML
         libxml_use_internal_errors(true);
@@ -118,16 +124,16 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
         $dom->loadHTML($content);
         libxml_clear_errors();
 
-        // save label for ids for later
-        $label_for_ids = array();
+        // save new label for ids for later
         foreach ($dom->getElementsByTagName('label') as $label) {
             if ($label->hasAttribute('for')) {
-                $label_for_ids[] = $label->getAttribute('for');
+                $this->label_for_ids[] = $label->getAttribute('for');
             }
         }
 
         foreach ($dom->getElementsByTagName('input') as $form_control) {
-            if ($this->is_missing_form_label($form_control, $label_for_ids)) {
+            if ($this->is_missing_form_label($form_control)) {
+                $error_line = $tokens[$stackPtr]['line'] - $num_content_lines + $form_control->getLineNo();
                 // from WAVE tool (http://wave.webaim.org/)
                 // Errors:
                 // Missing form label
@@ -143,10 +149,11 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
                 // a <label> element that surrounds the form control, does not surround any other form controls, and does not reference another element with its for attribute
                 // a non-empty title attribute, or
                 // a non-empty aria-labelledby attribute.
-                $phpcsFile->addError('All visible <input> tags must have a title or aria-label attribute or associated <label>', $stackPtr, 'Missing form label');
+                $phpcsFile->addErrorOnLine('All visible <input> tags must have a title or aria-label attribute or associated <label>', $error_line, 'Missing form label');
             }
 
             if ($this->is_empty_button_input($form_control)) {
+                $error_line = $tokens[$stackPtr]['line'] - $num_content_lines + $form_control->getLineNo();
                 // from WAVE tool (http://wave.webaim.org/)
                 // Errors:
                 // Empty button
@@ -158,22 +165,25 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
                 // Place text content within the <button> element or give the <input> element a value attribute.
                 // The Algorithm... in English:
                 // A <button> element is present that contains no text content (or alternative text), or an <input type="submit">, <input type="button">, or <input type="reset"> has an empty or missing value attribute.
-                $phpcsFile->addError('All <input>tags with type "submit", "button", or "reset" must have an aria-label or non-empty value attribute', $stackPtr, 'Empty Button');
+                $phpcsFile->addErrorOnLine('All <input>tags with type "submit", "button", or "reset" must have an aria-label or non-empty value attribute', $error_line, 'Empty Button');
             }
         }
         foreach ($dom->getElementsByTagName('select') as $form_control) {
-            if ($this->is_missing_form_label($form_control, $label_for_ids)) {
-                $phpcsFile->addError('All visible <select> tags must have a title or aria-label attribute or associated <label>', $stackPtr, 'Missing form label');
+            if ($this->is_missing_form_label($form_control)) {
+                $error_line = $tokens[$stackPtr]['line'] - $num_content_lines + $form_control->getLineNo();
+                $phpcsFile->addErrorOnLine('All visible <select> tags must have a title or aria-label attribute or associated <label>', $error_line, 'Missing form label');
             }
         }
         foreach ($dom->getElementsByTagName('textarea') as $form_control) {
-            if ($this->is_missing_form_label($form_control, $label_for_ids)) {
-                $phpcsFile->addError('All visible <textarea> tags must have a title or aria-label attribute or associated <label>', $stackPtr, 'Missing form label');
+            if ($this->is_missing_form_label($form_control)) {
+                $error_line = $tokens[$stackPtr]['line'] - $num_content_lines + $form_control->getLineNo();
+                $phpcsFile->addErrorOnLine('All visible <textarea> tags must have a title or aria-label attribute or associated <label>', $error_line, 'Missing form label');
             }
         }
 
         foreach ($dom->getElementsByTagName('img') as $image) {
             if (!$image->hasAttribute('alt')) {
+                $error_line = $tokens[$stackPtr]['line'] - $num_content_lines + $image->getLineNo();
                 // from WAVE tool (http://wave.webaim.org/)
                 // Errors:
                 // Missing alternative text
@@ -185,13 +195,14 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
                 // Add an alt attribute to the image. The attribute value should accurately and succinctly present the content and function of the image. If the content of the image is conveyed in the context or surroundings of the image, or if the image does not convey content or have a function, it should be given empty/null alternative text (alt="").
                 // The Algorithm... in English:
                 // An image does not have an alt attribute.
-                $phpcsFile->addError('All <img> tags must have an alt attribute', $stackPtr, 'Missing alternative text');
+                $phpcsFile->addErrorOnLine('All <img> tags must have an alt attribute', $error_line, 'Missing alternative text');
             }
         }
 
         foreach ($dom->getElementsByTagName('a') as $link) {
             foreach ($link->getElementsByTagName('img') as $link_image) {
                 if ('' === trim($link_image->getAttribute('alt'))) {
+                    $error_line = $tokens[$stackPtr]['line'] - $num_content_lines + $link_image->getLineNo();
                     // from WAVE tool (http://wave.webaim.org/)
                     // Errors:
                     // Linked image missing alternative text
@@ -203,7 +214,7 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
                     // Add appropriate alternative text that presents the content of the image and/or the function of the link.
                     // The Algorithm... in English:
                     // An image without alternative text (missing alt attribute or an alt value that is null/empty or only space characters) is within a link that contains no text and no images with alternative text.
-                    $phpcsFile->addError('All <img> tags in <a> tags must have a non-empty alt attribute', $stackPtr, 'Linked image missing alternative text');
+                    $phpcsFile->addErrorOnLine('All <img> tags in <a> tags must have a non-empty alt attribute', $error_line, 'Linked image missing alternative text');
                 }
             }
 
