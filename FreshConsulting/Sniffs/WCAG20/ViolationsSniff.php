@@ -233,6 +233,7 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
         $keep_going = true;
         $offset = 0;
         while ($keep_going) {
+            // <a></a>
             if (1 === preg_match('/<a ([^>]*)>\s*<\/a>/', $content, $matches, PREG_OFFSET_CAPTURE, $offset)) {
                 if (isset($matches[1]) && false !== stristr($matches[1][0], 'href') && false === stristr($matches[1][0], 'aria-label')) {
                     // from WAVE tool (http://wave.webaim.org/)
@@ -257,7 +258,8 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
         $keep_going = true;
         $offset = 0;
         while ($keep_going) {
-            if (1 === preg_match('/<a ([^>]*)>\s*<(span|div) [^>]*>\s*<\/\2>\s*<\/a>/', $content, $matches, PREG_OFFSET_CAPTURE, $offset)) {
+            // <a><span></span></a>, <a><div></div></a>, <a><span><i></i></span></a>, <a><div><i></i></div></a>, <a><span><i></i><i></i></span></a>, etc
+            if (1 === preg_match('/<a ([^>]*)>\s*<(span|div) [^>]*>\s*(<i [^>]*><\/i>\s*)*<\/\2>\s*<\/a>/', $content, $matches, PREG_OFFSET_CAPTURE, $offset)) {
                 if (isset($matches[1]) && false !== stristr($matches[1][0], 'href') && false === stristr($matches[1][0], 'aria-label')) {
                     $phpcsFile->addError('All <a> tags which do not enclose text must have an aria-label attribute (%s)', $stackPtr, 'Empty link', array($matches[0][0]));
                 }
