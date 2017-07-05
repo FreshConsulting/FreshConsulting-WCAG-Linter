@@ -109,7 +109,13 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
             return;
         }
 
-        $num_content_lines = substr_count($content, "\n") + 1;
+        // $error_line will differ by 1 depending on whether the next token is on the same line or on a different line
+        $content_lines = explode("\n", $content);
+        $num_content_lines = count($content_lines);
+        $last_line = $content_lines[$num_content_lines - 1];
+        if (0 === strlen($last_line)) {
+            $num_content_lines -= 1;
+        }
 
         // the HTML parser will complete non-closed elements
         // if the element is not properly closed we cannot judge its validity
