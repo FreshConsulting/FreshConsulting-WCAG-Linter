@@ -10,3 +10,5 @@ Currently the only rule provided is
 
 FreshConsulting.WCAG20.Violations
 ```
+
+Run unit tests with `phpunit Test/AllTests` or `PHPCS_DIR=/path/to/PHP_CodeSniffer phpunit Test/AllTests`.
