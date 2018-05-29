@@ -1,0 +1,6 @@
+{
+    "name": "freshconsulting/wcag_linter",
+    "description": "A PHP_CodeSniffer custom rule (sniff) to detect obvious WCAG 2.0 accessibility violations.",
+    "license": "BSD-3-Clause",
+    "require": {}
+}
