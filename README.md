@@ -7,7 +7,7 @@ There are many violations which are not caught but the ability to detect some is
 
 ### Installation
 
-Requires PHPCS 2.x.
+Requires PHPCS 3.x.
 
 Clone this repository:
 

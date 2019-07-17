@@ -1,6 +1,12 @@
 <?php
 
-class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_Sniff
+namespace FreshConsulting\Sniffs\WCAG20;
+
+use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
+use DOMDocument;
+
+class ViolationsSniff implements Sniff
 {
 
     // <label> attributes may be in separate text blocks from the form elements they describe
@@ -64,13 +70,13 @@ class FreshConsulting_Sniffs_WCAG20_ViolationsSniff implements PHP_CodeSniffer_S
     /**
      * Processes the tokens that this sniff is interested in.
      *
-     * @param PHP_CodeSniffer_File $phpcsFile The file where the token was found.
+     * @param File                 $phpcsFile The file where the token was found.
      * @param int                  $stackPtr  The position in the stack where
      *                                        the token was found.
      *
      * @return void
      */
-    public function process(PHP_CodeSniffer_File $phpcsFile, $stackPtr) {
+    public function process(File $phpcsFile, $stackPtr) {
         $tokens = $phpcsFile->getTokens();
 
         // if we're a regex argument to a preg_* function then continue
