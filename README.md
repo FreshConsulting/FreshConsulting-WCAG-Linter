@@ -11,7 +11,7 @@ Requires PHPCS 3.x.
 
 Clone this repository:
 
-    git clone https://bitbucket.org/freshconsulting/freshconsulting-wcag-linter.git wcag
+    git clone https://github.com/FreshConsulting/FreshConsulting-WCAG-Linter.git wcag
 	
 Add the repository path to the PHP_CodeSniffer configuration:
 
