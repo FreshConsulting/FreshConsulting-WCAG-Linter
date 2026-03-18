@@ -1,6 +1,6 @@
 # Fresh Consulting WCAG 2.0 Linter #
 
-A [PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer) custom rule (sniff) to detect obvious [WCAG 2.0](https://www.w3.org/TR/WCAG20/) accessibility violations.
+A [PHP_CodeSniffer](https://github.com/PHPCSStandards/PHP_CodeSniffer) custom rule (sniff) to detect obvious [WCAG 2.0](https://www.w3.org/TR/WCAG20/) accessibility violations.
 
 There are many violations which are not caught but the ability to detect some is better than none.
 
